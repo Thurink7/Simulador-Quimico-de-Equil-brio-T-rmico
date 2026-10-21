@@ -27,7 +27,7 @@ export class ContainerNode extends Node {
   private readonly ticks = new Node({ pickable: false })
   private readonly materialNode = new MaterialNode()
   private readonly labelBadge = new Rectangle(-22, 8, 44, 22, 8, 8, {
-    fill: '#5b21b6',
+    fill: '#111827',
   })
   private readonly labelText = new Text('A', {
     font: '700 13px "Segoe UI", system-ui, sans-serif',
@@ -35,7 +35,7 @@ export class ContainerNode extends Node {
   })
   private readonly tempText = new Text('—', {
     font: '600 12px "Segoe UI", system-ui, sans-serif',
-    fill: '#0f172a',
+    fill: '#172033',
   })
   private readonly massText = new Text('', {
     font: '12px "Segoe UI", system-ui, sans-serif',
@@ -47,24 +47,24 @@ export class ContainerNode extends Node {
     lineWidth: 1,
   })
   private readonly thermoFill = new Rectangle(49.5, -40, 4, 14, 2, 2, {
-    fill: '#2563eb',
+    fill: '#3b82f6',
   })
   private readonly thermoBulb = new Circle(6, {
     x: 51.5,
     y: -18,
-    fill: '#2563eb',
-    stroke: '#1e3a8a',
+    fill: '#3b82f6',
+    stroke: '#1d4ed8',
     lineWidth: 1,
   })
   private readonly selection = new Circle(58, {
-    fill: 'rgba(124, 58, 237, 0.10)',
-    stroke: 'rgba(124, 58, 237, 0.0)',
+    fill: 'rgba(59, 130, 246, 0.10)',
+    stroke: 'rgba(59, 130, 246, 0.0)',
     lineWidth: 3,
     y: -60,
     pickable: false,
   })
   private readonly shadow = new Circle(36, {
-    fill: 'rgba(15, 23, 42, 0.16)',
+    fill: 'rgba(15, 23, 42, 0.13)',
     y: 10,
     pickable: false,
   })
@@ -145,11 +145,11 @@ export class ContainerNode extends Node {
 
     const primary = primaryMaterial(container)
     const accent = primary ? getMaterial(primary).color : '#64748b'
-    this.labelBadge.fill = selected ? '#5b21b6' : accent
+    this.labelBadge.fill = selected ? '#111827' : accent
 
     if (temperature !== null) {
       const t = Math.min(1, Math.max(0, (temperature - 5) / 95))
-      const fill = t > 0.5 ? '#dc2626' : '#2563eb'
+      const fill = t > 0.55 ? '#f97316' : '#3b82f6'
       this.thermoFill.fill = fill
       this.thermoBulb.fill = fill
       const thermoHeight = 12 + t * 70
@@ -159,13 +159,13 @@ export class ContainerNode extends Node {
     this.selection.stroke = isTarget
       ? 'rgba(34, 197, 94, 0.9)'
       : selected || dragging
-        ? 'rgba(124, 58, 237, 0.85)'
-        : 'rgba(124, 58, 237, 0)'
+        ? 'rgba(59, 130, 246, 0.85)'
+        : 'rgba(59, 130, 246, 0)'
     this.selection.fill = isTarget
       ? 'rgba(34, 197, 94, 0.12)'
       : dragging
-        ? 'rgba(124, 58, 237, 0.16)'
-        : 'rgba(124, 58, 237, 0.0)'
+        ? 'rgba(59, 130, 246, 0.16)'
+        : 'rgba(59, 130, 246, 0.0)'
     this.cursor = dragging ? 'grabbing' : 'grab'
 
     const tilt = pourTiltRadians(pour, pour?.sourceId === container.id)

@@ -8,6 +8,8 @@ import { ParticleSystem } from './ParticleSystem'
 import { temperatureSpread } from '../animations/HeatTransferAnimation'
 
 export class LaboratoryScene {
+  private readonly host: HTMLElement
+  private readonly controller: SimulationController
   private readonly display: Display
   private readonly root: Node
   private readonly bench: Node
@@ -25,27 +27,26 @@ export class LaboratoryScene {
   private draggingIds = new Set<string>()
   private disposed = false
 
-  constructor(
-    private readonly host: HTMLElement,
-    private readonly controller: SimulationController,
-  ) {
+  constructor(host: HTMLElement, controller: SimulationController) {
+    this.host = host
+    this.controller = controller
     this.root = new Node()
     this.backsplash = new Rectangle(0, 0, this.width, this.height, {
-      fill: '#eef2f7',
+      fill: '#f7f9fc',
     })
     this.benchTop = new Rectangle(0, this.height * 0.72, this.width, this.height * 0.28, {
-      fill: '#d6c7b4',
+      fill: '#e9eef5',
     })
     const edge = new Rectangle(0, this.height * 0.72, this.width, 10, {
-      fill: '#b08968',
+      fill: '#cbd5e1',
     })
     this.mixZone = new Rectangle(0, 0, 220, 150, 18, 18, {
-      fill: 'rgba(124, 58, 237, 0.06)',
-      stroke: 'rgba(124, 58, 237, 0.18)',
+      fill: 'rgba(59, 130, 246, 0.045)',
+      stroke: 'rgba(59, 130, 246, 0.20)',
       lineWidth: 2,
     })
     this.hint = new Text('', {
-      font: '13px "Segoe UI", system-ui, sans-serif',
+      font: '600 12px Inter, "Segoe UI", system-ui, sans-serif',
       fill: '#64748b',
     })
     this.stream = new Path(null, {
@@ -67,7 +68,7 @@ export class LaboratoryScene {
       listenToOnlyElement: true,
       width: this.width,
       height: this.height,
-      backgroundColor: '#eef2f7',
+      backgroundColor: '#f7f9fc',
     })
     this.display.initializeEvents()
     this.display.updateOnRequestAnimationFrame((dt: number) => {
@@ -88,8 +89,8 @@ export class LaboratoryScene {
 
   resize(): void {
     const rect = this.host.getBoundingClientRect()
-    this.width = Math.max(320, Math.floor(rect.width))
-    this.height = Math.max(280, Math.floor(rect.height))
+    this.width = Math.max(1, Math.floor(rect.width))
+    this.height = Math.max(260, Math.floor(rect.height))
     this.display.width = this.width
     this.display.height = this.height
     this.layoutBench()
@@ -177,11 +178,12 @@ export class LaboratoryScene {
     this.updateStream(snapshot.pour?.sourceId ?? null, snapshot.pour?.targetId ?? null, snapshot.pour?.progress ?? 0)
 
     const exchanging = snapshot.phase === 'exchanging' || snapshot.phase === 'paused'
-    const activeContainer = snapshot.containers.find((container) => temperatureSpread(container.contents) > 0.2)
-    if (exchanging && activeContainer && !snapshot.reducedMotion) {
+    const activeContainer = snapshot.containers.find((container) => container.contents.length > 1 && temperatureSpread(container.contents) > 0.2)
+    const warmWater = activeContainer?.contents.some((sample) => sample.materialId === 'water' && sample.temperatureC >= 40)
+    if (exchanging && activeContainer && warmWater && !snapshot.reducedMotion) {
       const node = this.nodes.get(activeContainer.id)
       if (node) {
-        this.particles.step(dt, true, node.x - 18, node.y - 90, node.x + 18, node.y - 36, '#f97316')
+        this.particles.step(dt, true, node.x - 16, node.y - 78, node.x + 16, node.y - 45, '#f97316')
       }
     } else {
       this.particles.step(dt, false, 0, 0, 0, 0, '#f97316')

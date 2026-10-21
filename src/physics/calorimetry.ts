@@ -63,8 +63,7 @@ function buildSubstitution(
   te: number,
   sameMaterial: boolean,
 ): string {
-  const numerParts = samples.map((sample, index) => {
-    const n = index + 1
+  const numerParts = samples.map((sample) => {
     const m = formatNumber(sample.massKg)
     const t = formatNumber(sample.temperatureC)
     if (sameMaterial) {

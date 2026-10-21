@@ -2,8 +2,8 @@ import type { ThermalMass } from '../../physics/calorimetry'
 
 export function thermalColor(temperatureC: number, baseHex: string): string {
   const t = clamp((temperatureC - 5) / 95, 0, 1)
-  const cold = hexToRgb('#2563eb')
-  const hot = hexToRgb('#dc2626')
+  const cold = hexToRgb('#3b82f6')
+  const hot = hexToRgb('#f97316')
   const base = hexToRgb(baseHex)
   const mix = {
     r: Math.round(base.r * 0.35 + cold.r * (1 - t) * 0.65 + hot.r * t * 0.65),

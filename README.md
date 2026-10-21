@@ -1,12 +1,16 @@
-# ThermoLab
+# Ponto de Equilíbrio
 
-Laboratório virtual de trocas de calor para ensino de Termodinâmica.
+Laboratório virtual de Física e Química para exploração interativa de trocas de calor.
 
 ## Stack
 
 - React + TypeScript + Vite
 - SceneryStack para a bancada interativa
 - Modelo de calorimetria em `src/physics`
+
+## Experimento atual
+
+Trocas de calor entre amostras em um sistema isolado, sem mudança de fase. O modelo considera água, cobre, areia e óleo, com as restrições de mistura definidas em `src/physics/mixingRules.ts`.
 
 ## Como executar
 

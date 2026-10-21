@@ -3,33 +3,18 @@ import { MATERIALS, MATERIAL_IDS, type MaterialId } from '../../physics/material
 interface MaterialSelectorProps {
   value: MaterialId | null
   disabled: boolean
+  id: string
   onChange: (id: MaterialId) => void
 }
 
-export function MaterialSelector({ value, disabled, onChange }: MaterialSelectorProps) {
+export function MaterialSelector({ value, disabled, id, onChange }: MaterialSelectorProps) {
   return (
-    <div className="material-grid" role="listbox" aria-label="Materiais">
-      {MATERIAL_IDS.map((id) => {
-        const material = MATERIALS[id]
-        const selected = value === id
-        return (
-          <button
-            key={id}
-            type="button"
-            role="option"
-            aria-selected={selected}
-            className={`material-card ${selected ? 'selected' : ''}`}
-            disabled={disabled}
-            onClick={() => onChange(id)}
-          >
-            <span className="swatch" style={{ background: material.fillColor }} />
-            <span className="material-name">{material.name}</span>
-            <span className="material-meta">
-              c = {material.specificHeatJPerKgC} J/kg·°C
-            </span>
-          </button>
-        )
-      })}
-    </div>
+    <label className="material-select control-field" htmlFor={`${id}-material`}>
+      <span className="field-heading"><span>Material</span><span className="material-sample" style={{ background: value ? MATERIALS[value].fillColor : '#94a3b8' }} /></span>
+      <select id={`${id}-material`} value={value ?? ''} disabled={disabled} onChange={(event) => onChange(event.target.value as MaterialId)}>
+        <option value="" disabled>Selecione um material</option>
+        {MATERIAL_IDS.map((materialId) => <option key={materialId} value={materialId}>{MATERIALS[materialId].name}</option>)}
+      </select>
+    </label>
   )
 }

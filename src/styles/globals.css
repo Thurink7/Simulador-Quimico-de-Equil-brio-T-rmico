@@ -1,49 +1,40 @@
 :root {
-  --lab-bg: #f4f6f9;
-  --lab-surface: #ffffff;
-  --lab-ink: #0f172a;
-  --lab-muted: #64748b;
-  --lab-line: #e2e8f0;
-  --lab-purple: #7c3aed;
-  --lab-purple-soft: rgba(124, 58, 237, 0.12);
-  --lab-blue: #2563eb;
-  --lab-hot: #dc2626;
-  --lab-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  --lab-sans: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
-  font-family: var(--lab-sans);
-  color: var(--lab-ink);
-  background: var(--lab-bg);
+  font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: #172033;
+  background: #f4f6fa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  --page: #f4f6fa;
+  --surface: #fff;
+  --ink: #172033;
+  --muted: #697586;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --accent: #111827;
+  --blue: #3b82f6;
+  --blue-soft: #eff6ff;
+  --green: #16a34a;
+  --red: #dc2626;
+  --amber: #d97706;
+  --sans: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgb(15 23 42 / 4%), 0 8px 24px rgb(15 23 42 / 3%);
+  font-size: 14px;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100%;
-}
-
-body {
-  background:
-    radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 28%),
-    var(--lab-bg);
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
+*, *::before, *::after { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--page); }
+button, input, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid rgb(59 130 246 / 45%); outline-offset: 2px; }
+button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
+::selection { color: #fff; background: #172033; }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

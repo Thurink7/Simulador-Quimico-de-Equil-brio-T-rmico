@@ -15,7 +15,9 @@ export class ParticleSystem {
     this.node = new Node({ pickable: false })
     for (let i = 0; i < count; i += 1) {
       const circle = new Circle(2.4, {
-        fill: '#fb7185',
+        fill: 'rgba(255,255,255,0.78)',
+        stroke: '#f97316',
+        lineWidth: 1.3,
         opacity: 0,
       })
       this.particles.push({

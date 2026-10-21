@@ -23,6 +23,19 @@ export interface PhysicsResults {
   substitution: string
   explanation: string
   containerId: string
+  initialSamples: ThermalMass[]
+}
+
+export interface TemperatureSeries {
+  id: string
+  label: string
+  materialId: MaterialId
+  initialTemperatureC: number
+}
+
+export interface TemperatureHistoryPoint {
+  timeS: number
+  temperaturesC: number[]
 }
 
 export interface SimulationSnapshot {
@@ -34,6 +47,9 @@ export interface SimulationSnapshot {
   results: PhysicsResults | null
   pour: PourState | null
   reducedMotion: boolean
+  mixingDurationS: number
+  temperatureSeries: TemperatureSeries[]
+  temperatureHistory: TemperatureHistoryPoint[]
 }
 
 export interface PourState {
@@ -56,8 +72,12 @@ export function cloneSnapshot(snapshot: SimulationSnapshot): SimulationSnapshot 
       ...container,
       contents: container.contents.map((sample) => ({ ...sample })),
     })),
-    results: snapshot.results ? { ...snapshot.results } : null,
+    results: snapshot.results
+      ? { ...snapshot.results, initialSamples: snapshot.results.initialSamples.map((sample) => ({ ...sample })) }
+      : null,
     pour: snapshot.pour ? { ...snapshot.pour } : null,
+    temperatureSeries: snapshot.temperatureSeries.map((series) => ({ ...series })),
+    temperatureHistory: snapshot.temperatureHistory.map((point) => ({ ...point, temperaturesC: [...point.temperaturesC] })),
   }
 }
 

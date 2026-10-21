@@ -42,6 +42,9 @@ function createDefaultSnapshot(): SimulationSnapshot {
     results: null,
     pour: null,
     reducedMotion: false,
+    mixingDurationS: 5,
+    temperatureSeries: [],
+    temperatureHistory: [],
   }
 }
 
@@ -52,6 +55,8 @@ export class SimulationController {
   private sceneListeners = new Set<() => void>()
   private pendingContents: { sourceId: string; targetId: string } | null = null
   private uiAcc = 0
+  private exchangeTimeS = 0
+  private exchangeRate = EXCHANGE_RATE
 
   constructor() {
     this.snapshot = createDefaultSnapshot()
@@ -83,6 +88,12 @@ export class SimulationController {
     }
     this.snapshot.reducedMotion = value
     this.notifyScene()
+  }
+
+  setMixingDurationS(value: number): void {
+    if (this.isBusy()) return
+    this.snapshot.mixingDurationS = clamp(value, 0.5, 12)
+    this.notifyUi()
   }
 
   selectContainer(id: string | null): void {
@@ -117,7 +128,7 @@ export class SimulationController {
   }
 
   setMaterial(containerId: string, materialId: MaterialId): void {
-    if (!this.canEdit()) {
+    if (!this.beginEdit()) {
       return
     }
     const container = this.findContainer(containerId)
@@ -125,9 +136,12 @@ export class SimulationController {
       return
     }
     const material = getMaterial(materialId)
-    const previous = container.contents[0]
-    const massKg = previous?.massKg ?? 0.2
-    let temperatureC = previous?.temperatureC ?? 25
+    const previous = container.contents
+    const massKg = previous.reduce((sum, sample) => sum + sample.massKg, 0) || 0.2
+    const previousMass = previous.reduce((sum, sample) => sum + sample.massKg, 0)
+    let temperatureC = previousMass > 0
+      ? previous.reduce((sum, sample) => sum + sample.massKg * sample.temperatureC, 0) / previousMass
+      : 25
     temperatureC = clamp(temperatureC, material.minTempC, material.maxTempC)
     container.contents = [{ materialId, massKg, temperatureC }]
     this.captureBaseline()
@@ -135,7 +149,7 @@ export class SimulationController {
   }
 
   setMassKg(containerId: string, massKg: number): void {
-    if (!this.canEdit()) {
+    if (!this.beginEdit()) {
       return
     }
     const container = this.findContainer(containerId)
@@ -158,7 +172,7 @@ export class SimulationController {
   }
 
   setTemperatureC(containerId: string, temperatureC: number): void {
-    if (!this.canEdit()) {
+    if (!this.beginEdit()) {
       return
     }
     const container = this.findContainer(containerId)
@@ -177,7 +191,7 @@ export class SimulationController {
   }
 
   addContainer(): void {
-    if (!this.canEdit() || this.snapshot.containers.length >= MAX_CONTAINERS) {
+    if (!this.beginEdit() || this.snapshot.containers.length >= MAX_CONTAINERS) {
       return
     }
     const index = this.snapshot.containers.length
@@ -194,7 +208,7 @@ export class SimulationController {
   }
 
   removeContainer(containerId: string): void {
-    if (!this.canEdit() || this.snapshot.containers.length <= MIN_CONTAINERS) {
+    if (!this.beginEdit() || this.snapshot.containers.length <= MIN_CONTAINERS) {
       return
     }
     this.snapshot.containers = this.snapshot.containers.filter((container) => container.id !== containerId)
@@ -206,7 +220,7 @@ export class SimulationController {
   }
 
   emptyContainer(containerId: string): void {
-    if (!this.canEdit()) {
+    if (!this.beginEdit()) {
       return
     }
     const container = this.findContainer(containerId)
@@ -219,7 +233,7 @@ export class SimulationController {
   }
 
   configureContainer(containerId: string, input: ContainerConfigInput): void {
-    if (!this.canEdit()) {
+    if (!this.beginEdit()) {
       return
     }
     const container = this.findContainer(containerId)
@@ -265,6 +279,7 @@ export class SimulationController {
     }
 
     this.pendingContents = { sourceId, targetId }
+    this.beginTemperatureTrace(source, target)
     this.snapshot.pour = {
       sourceId,
       targetId,
@@ -275,10 +290,6 @@ export class SimulationController {
     this.snapshot.interactionHint = assessment.reason
     this.snapshot.dropTargetId = targetId
     this.snapshot.results = null
-
-    if (this.snapshot.reducedMotion) {
-      this.completePour()
-    }
 
     this.notifyAll()
     return true
@@ -302,8 +313,10 @@ export class SimulationController {
 
   reset(): void {
     const reduced = this.snapshot.reducedMotion
+    const mixingDurationS = this.snapshot.mixingDurationS
     this.snapshot = cloneSnapshot(this.baseline)
     this.snapshot.reducedMotion = reduced
+    this.snapshot.mixingDurationS = mixingDurationS
     this.snapshot.phase = 'idle'
     this.snapshot.pour = null
     this.snapshot.results = null
@@ -311,6 +324,8 @@ export class SimulationController {
     this.snapshot.selectedId = null
     this.snapshot.interactionHint = 'Experimento reiniciado. Arraste um recipiente até outro.'
     this.pendingContents = null
+    this.exchangeTimeS = 0
+    this.uiAcc = 0
     this.notifyAll()
   }
 
@@ -328,6 +343,7 @@ export class SimulationController {
     if (this.snapshot.phase !== 'exchanging') {
       return
     }
+    this.exchangeTimeS += dt
 
     let reached = true
     for (const container of this.snapshot.containers) {
@@ -341,7 +357,7 @@ export class SimulationController {
       for (const sample of container.contents) {
         const next =
           sample.temperatureC +
-          (result.equilibriumTemperatureC - sample.temperatureC) * (1 - Math.exp(-EXCHANGE_RATE * dt))
+          (result.equilibriumTemperatureC - sample.temperatureC) * (1 - Math.exp(-this.exchangeRate * dt))
         sample.temperatureC = next
         if (Math.abs(sample.temperatureC - result.equilibriumTemperatureC) > TEMP_EPSILON) {
           reached = false
@@ -358,8 +374,10 @@ export class SimulationController {
 
     this.notifyScene()
     this.uiAcc += dt
-    if (this.uiAcc >= 0.12) {
+    if (this.uiAcc >= 0.05) {
       this.uiAcc = 0
+      const active = this.snapshot.containers.find((container) => container.id === this.snapshot.results?.containerId)
+      if (active) this.appendTemperaturePoint(this.exchangeTimeS, active.contents.map((sample) => sample.temperatureC))
       this.notifyUi()
     }
   }
@@ -390,13 +408,26 @@ export class SimulationController {
       return
     }
 
-    const combined = mergeSamples([...target.contents, ...source.contents])
+    // Keep samples separate while exchanging so equal materials can still reach
+    // equilibrium visibly and retain the initial energy transfer for results.
+    const combined = [...target.contents, ...source.contents].map((sample) => ({ ...sample }))
     target.contents = combined
     source.contents = []
 
     if (target.contents.length >= 2) {
       const preview = computeEquilibrium(target.contents)
       this.snapshot.phase = 'exchanging'
+      if (preview) {
+        const maxDeviation = Math.max(...target.contents.map((sample) => Math.abs(sample.temperatureC - preview.equilibriumTemperatureC)))
+        this.exchangeRate = maxDeviation > TEMP_EPSILON
+          ? Math.log(maxDeviation / TEMP_EPSILON) / this.snapshot.mixingDurationS
+          : EXCHANGE_RATE
+        this.snapshot.results = {
+          ...preview,
+          containerId: target.id,
+          initialSamples: target.contents.map((sample) => ({ ...sample })),
+        }
+      }
       this.snapshot.interactionHint = preview?.explanation ?? 'A troca de calor está em curso.'
       this.notifyAll()
       return
@@ -407,9 +438,11 @@ export class SimulationController {
       this.snapshot.results = {
         ...result,
         containerId: target.id,
+        initialSamples: target.contents.map((sample) => ({ ...sample })),
       }
       this.snapshot.phase = 'equilibrium'
       this.snapshot.interactionHint = result.explanation
+      this.appendTemperaturePoint(0, result.sampleEquilibrium.map((sample) => sample.temperatureC))
     } else {
       this.snapshot.phase = 'idle'
     }
@@ -421,12 +454,12 @@ export class SimulationController {
     if (container) {
       const result = computeEquilibrium(container.contents)
       if (result) {
-        container.contents = result.sampleEquilibrium
-        this.snapshot.results = {
-          ...result,
-          containerId: container.id,
-        }
+        container.contents = mergeSamples(result.sampleEquilibrium)
+        this.snapshot.results = this.snapshot.results?.containerId === container.id
+          ? { ...this.snapshot.results }
+          : { ...result, containerId: container.id, initialSamples: container.contents.map((sample) => ({ ...sample })) }
         this.snapshot.interactionHint = result.explanation
+        this.appendTemperaturePoint(this.exchangeTimeS, result.sampleEquilibrium.map((sample) => sample.temperatureC))
       }
     }
     this.snapshot.phase = 'equilibrium'
@@ -441,6 +474,47 @@ export class SimulationController {
     if (this.snapshot.phase === 'idle') {
       this.baseline = cloneSnapshot(this.snapshot)
     }
+  }
+
+  private beginEdit(): boolean {
+    if (!this.canEdit()) {
+      return false
+    }
+    if (this.snapshot.phase === 'equilibrium') {
+      this.snapshot.phase = 'idle'
+      this.snapshot.results = null
+      this.snapshot.pour = null
+      this.snapshot.interactionHint = 'Parâmetros atualizados. Ajuste as amostras ou inicie uma nova transferência.'
+      this.snapshot.temperatureSeries = []
+      this.snapshot.temperatureHistory = []
+      this.exchangeTimeS = 0
+    }
+    return true
+  }
+
+  private beginTemperatureTrace(source: ContainerState, target: ContainerState): void {
+    const entries = [
+      ...target.contents.map((sample) => ({ container: target, sample })),
+      ...source.contents.map((sample) => ({ container: source, sample })),
+    ]
+    this.snapshot.temperatureSeries = entries.map(({ container, sample }, index) => ({
+      id: `${container.id}-${sample.materialId}-${index}`,
+      label: `${container.label} · ${getMaterial(sample.materialId).shortName}`,
+      materialId: sample.materialId,
+      initialTemperatureC: sample.temperatureC,
+    }))
+    this.snapshot.temperatureHistory = [{ timeS: 0, temperaturesC: entries.map(({ sample }) => sample.temperatureC) }]
+    this.exchangeTimeS = 0
+    this.uiAcc = 0
+  }
+
+  private appendTemperaturePoint(timeS: number, temperaturesC: number[]): void {
+    const last = this.snapshot.temperatureHistory[this.snapshot.temperatureHistory.length - 1]
+    if (last && Math.abs(last.timeS - timeS) < 1e-6) {
+      this.snapshot.temperatureHistory[this.snapshot.temperatureHistory.length - 1] = { timeS, temperaturesC: [...temperaturesC] }
+      return
+    }
+    this.snapshot.temperatureHistory.push({ timeS, temperaturesC: [...temperaturesC] })
   }
 
   private notifyUi(): void {
@@ -477,7 +551,7 @@ export function phaseLabel(phase: ExperimentPhase): string {
     case 'paused':
       return 'Pausado'
     case 'equilibrium':
-      return 'Equilíbrio'
+      return 'Concluído'
     default:
       return phase
   }
