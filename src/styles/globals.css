@@ -1,0 +1,49 @@
+:root {
+  --lab-bg: #f4f6f9;
+  --lab-surface: #ffffff;
+  --lab-ink: #0f172a;
+  --lab-muted: #64748b;
+  --lab-line: #e2e8f0;
+  --lab-purple: #7c3aed;
+  --lab-purple-soft: rgba(124, 58, 237, 0.12);
+  --lab-blue: #2563eb;
+  --lab-hot: #dc2626;
+  --lab-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --lab-sans: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+  font-family: var(--lab-sans);
+  color: var(--lab-ink);
+  background: var(--lab-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 28%),
+    var(--lab-bg);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
