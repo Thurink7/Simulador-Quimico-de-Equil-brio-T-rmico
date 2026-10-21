@@ -111,7 +111,10 @@ export class LaboratoryScene {
     this.benchTop.setRect(0, top, this.width, this.height - top)
     const edge = this.bench.children[2] as Rectangle
     edge.setRect(0, top, this.width, 12)
-    this.mixZone.setRect(this.width / 2 - 120, top - 170, 240, 150)
+
+    // Faz a zona de transferência acompanhar dinamicamente o centro e a largura disponível
+    const mixWidth = Math.min(320, this.width * 0.4);
+    this.mixZone.setRect(this.width / 2 - mixWidth / 2, top - 170, mixWidth, 150)
     this.hint.string = 'Zona de transferência'
     this.hint.centerX = this.width / 2
     this.hint.y = top - 178
@@ -210,8 +213,8 @@ export class LaboratoryScene {
 
   private dragBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
     return {
-      minX: 56,
-      maxX: this.width - 56,
+      minX: 40,
+      maxX: this.width - 40, // Permite chegar até a borda direita
       minY: 150,
       maxY: this.height - 36,
     }
